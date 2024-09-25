@@ -1,10 +1,12 @@
 import React from "react";
 import NFTshowcase from "@/components/functional/NFTshowcase";
+import TokenShowcase from "@/components/functional/TokenShowcase";
 
 const Home = () => {
   return (
     <div>
-      <NFTshowcase />
+      {/* <NFTshowcase /> */}
+      <TokenShowcase />
     </div>
   );
 };
