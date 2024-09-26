@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Clock, Fuel, User, Copy, Check } from "lucide-react";
+import { ArrowRight, Clock, Database, DollarSign, User } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type Transaction = {
   version: string;
@@ -11,10 +19,18 @@ type Transaction = {
   sender: string;
 };
 
+const typeColors = {
+  User: "bg-blue-500",
+  Contract: "bg-purple-500",
+  System: "bg-green-500",
+};
+
 function formatTimestamp(timestamp: string): string {
-  // Assuming the timestamp is in microseconds
-  const date = new Date(parseInt(timestamp) / 1000); // Convert to milliseconds
-  return date.toLocaleString();
+  return new Date(parseInt(timestamp) / 1000).toLocaleString();
+}
+
+function truncateAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 export default function AptosTransactionList({ address }: { address: string }) {
@@ -26,7 +42,7 @@ export default function AptosTransactionList({ address }: { address: string }) {
     const fetchTransactions = async () => {
       try {
         const response = await fetch(
-          `/api/getTransactions?address=${address}&limit=5`
+          `/api/getTransactions?address=${address}&limit=10`
         );
         if (!response.ok) {
           throw new Error("Failed to fetch transactions");
@@ -54,13 +70,22 @@ export default function AptosTransactionList({ address }: { address: string }) {
     );
 
   return (
-    <div className="w-[800px] bg-[#121919] rounded-xl shadow-lg overflow-hidden p-6">
-      <div className="space-y-4 max-h-[400px] overflow-y-auto">
-        {transactions.map((tx, index) => (
-          <TransactionCard key={tx.version} transaction={tx} index={index} />
-        ))}
-      </div>
-    </div>
+    <Card className="w-full max-w-[800px] bg-[#121919] shadow-lg">
+      <CardHeader></CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[400px] w-full rounded-md border border-[#2a2a2a] p-4">
+          <div className="space-y-4">
+            {transactions.map((tx, index) => (
+              <TransactionCard
+                key={tx.version}
+                transaction={tx}
+                index={index}
+              />
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -76,69 +101,90 @@ function TransactionCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.1 }}
-      className="bg-[#000000] rounded-lg p-4 hover:bg-[#1a1a1a] transition-all duration-200"
+      className="bg-[#000000] rounded-lg p-3 hover:bg-[#1a1a1a] transition-colors duration-200"
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <span
-            className={`text-xs font-semibold px-2 py-1 rounded ${
-              tx.success ? "bg-green-500" : "bg-red-500"
-            }`}
+            className={`text-xs font-semibold px-2 py-1 rounded ${typeColors["User"]}`}
           >
-            {tx.success ? "Success" : "Failed"}
+            User
           </span>
-          <span className="text-[#06F7F7] font-mono text-sm">{tx.version}</span>
+          <span className="text-[#06F7F7] font-mono text-xs">{tx.version}</span>
         </div>
-        <div className="flex items-center text-gray-400 text-sm">
-          <Clock size={14} className="mr-1" />
-          {formatTimestamp(tx.timestamp)}
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className="flex items-center text-gray-400 text-xs">
+                <Clock size={12} className="mr-1" />
+                {formatTimestamp(tx.timestamp)}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Transaction Timestamp</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2 text-gray-300">
-          <User size={16} />
-          <CopyableAddress address={tx.sender} />
-        </div>
-        <div className="flex items-center space-x-2 text-gray-300">
-          <Fuel size={16} />
-          <span>{tx.gas_used}</span>
-        </div>
+      <div className="flex items-center justify-between mb-2 text-xs">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className="flex items-center space-x-1 text-gray-300">
+                <User size={12} />
+                <span>{truncateAddress(tx.sender)}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sender Address</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <ArrowRight size={12} className="text-[#06F7F7]" />
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className="flex items-center space-x-1 text-gray-300">
+                <User size={12} />
+                <span>{truncateAddress(tx.sender)}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Recipient Address (placeholder)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-      <div className="flex justify-start items-center">
-        <div className="flex items-center space-x-2 text-[#06F7F7]">
-          <CopyableAddress address={tx.hash} />
-        </div>
+      <div className="flex justify-between items-center text-xs">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className="flex items-center space-x-1 text-[#06F7F7]">
+                <Database size={12} />
+                <span>Transaction::execute</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Transaction Function (placeholder)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className="flex items-center space-x-1 text-green-400">
+                <DollarSign size={12} />
+                <span>
+                  {(parseInt(tx.gas_used) / 100000000).toFixed(8)} APT
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Gas Used (in APT)</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </motion.div>
-  );
-}
-
-function CopyableAddress({ address }: { address: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div
-      className="flex items-center space-x-2 cursor-pointer group"
-      onClick={copyToClipboard}
-      title={copied ? "Copied!" : "Click to copy"}
-    >
-      <span className="font-mono text-sm text-gray-300 group-hover:text-[#06F7F7] transition-colors">
-        {`${address.slice(0, 6)}...${address.slice(-4)}`}
-      </span>
-      {copied ? (
-        <Check size={16} className="text-green-400" />
-      ) : (
-        <Copy
-          size={16}
-          className="text-gray-400 group-hover:text-[#06F7F7] transition-colors"
-        />
-      )}
-    </div>
   );
 }
